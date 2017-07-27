@@ -1,0 +1,17 @@
+#!/bin/sh
+ORACLE_BASE=/u01/app/crsusr
+GRID_HOME=/u01/app/grid
+THIS_NODE=`hostname -s`
+
+E01=ORACLE_BASE=${ORACLE_BASE}
+E02=ORACLE_HOME=${GRID_HOME}
+E03=ORACLE_HOME_NAME=OraGridHome1
+E04=INVENTORY_LOCATION=/u01/app/oraInventory
+E05=OSDBA_GROUP=oinstall
+E06=OSASM_GROUP=oinstall
+
+#C00="-debug"
+C01="CLUSTER_NODES={rws3010158}"
+C02="LOCAL_NODE=$THIS_NODE"
+
+perl ${GRID_HOME}/clone/bin/clone.pl -silent $E01 $E02 $E03 $E04 $E05 $E06 $C01 $C02 CRS=TRUE

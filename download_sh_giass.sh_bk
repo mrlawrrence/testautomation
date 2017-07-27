@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [ `id -u` != "0" ]; then
+echo "please use root "
+exit 1
+fi
+#require user_name, zip_loc, oracle_home.
+echo -n "enter the oracle home : 'ORACLE_HOME'"
+read ORACLE_HOME
+
+echo -n "enter the user name : 'USER'"
+read  USER
+
+echo -n "enter the zip location: 'ZIP_LOC'"
+read ZIP_LOC
+
+# USER=jennifer.fu
+ RELEASE=12.2.0.2
+ EMAIL=${USER}@oracle.com
+ echo $EMAIL
+# BUNDLE=22646084
+#JOBID=`curl -k -X POST -H 'Content-Type: application/json' -d '{ "userName":"'"$USER"'", "userEmailId":"'"$EMAIL"'", "baseReleaseVersion":"'"$RELEASE"'", "isCreateGridGoldImage":"true", "isCreateDBGoldImage":"true", "dbOneOffPatches":"", "dbPSU":"", "goldImageArchiveFormat":"zip", "isIgnoreConflictCheck":"true"  }' http://db-goldimage.us.oracle.com:8080/goldimages/jobs |awk -F "," '{print $1}'|awk -F ":" '{print $2}'|sed 's/\"//g'` 
+JOBID=7012
+echo $JOBID
+
+STATUS=`curl -X GET "http://db-goldimage.us.oracle.com:8080/goldimages/jobs/${JOBID}?username=jennifer.fu" |awk -F "," '{print $3}'|awk -F ":" '{print $2}'`
+
+for i in {0..3}
+do
+
+if [ "$STATUS" -ne "Completed" ] 
+then 
+
+echo $STATUS
+sleep 5m
+STATUS=`curl -X GET "http://db-goldimage.us.oracle.com:8080/goldimages/jobs/${JOBID}?username=jennifer.fu" |awk -F "," '{print $3}'|awk -F ":" '{print $2}'`
+fi
+echo " job submittion failure."
+exist 1
+done
+
+mkdir -p $ZIP_LOC
+chown -R crsusr:oinstall $ZIP_LOC
+rm -rf $ZIP_LOC/grid
+rm -rf $ZIP_LOC/database
+
+FULL_STATUS=`curl -X GET "http://db-goldimage.us.oracle.com:8080/goldimages/jobs/${JOBID}?username=${USER}" `
+echo $FULL_STATUS
+DB_ZIP=`echo $FULL_STATUS |awk -F "," '{print $4}'|awk -F "\"" '{print $6}'`
+GI_ZIP=`echo $FULL_STATUS |awk -F "," '{print $5}'|awk -F "\"" '{print $4}'`
+rm -rf grid12202.zip && wget --no-proxy $GI_ZIP && unzip grid12202.zip -d $ZIP_LOC/grid
+rm -rf db12202.zip && wget --no-proxy $DB_ZIP && unzip db12202.zip -d $ZIP_LOC/database
+
+chown -R crsusr:oisntall $ZIP_LOC
+
+
+
+echo 'GI and Database Shiphome is Downloaded.' | mail -s " GI Shiphome is downloaded. "  $EMAIL
